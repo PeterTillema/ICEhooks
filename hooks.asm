@@ -1,4 +1,4 @@
-#include "hooks/ti84pce.inc"
+#include "ti84pce.inc"
 
 #define AMOUNT_OF_CUSTOM_TOKENS 12
 #define AMOUNT_OF_GRAPHX_FUNCTIONS 93

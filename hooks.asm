@@ -166,7 +166,7 @@ KeyNotDown:
 	ld	(hl), tSum
 	cp	a, 21
 	jr	c, $+4
-	add	a, 5				; Skip 5 FILEIOC functions
+	add	a, 8				; Skip 8 FILEIOC functions
 	jr	++_
 _:	ld	(hl), tDet
 	sub	a, AMOUNT_OF_FILEIOC_FUNCTIONS
@@ -480,7 +480,7 @@ GetDetValueStop:
 	ld	bc, FileiocFunctionsPointers
 	cp	a, 26
 	jr	c, ++_
-	sub	a, 5
+	sub	a, 8
 	ld	l, a
 	jr	++_
 _:	ld	de, AMOUNT_OF_GRAPHX_FUNCTIONS

@@ -1,12 +1,14 @@
 #include "ti84pce.inc"
 
 #define AMOUNT_OF_CUSTOM_TOKENS 10
-#define AMOUNT_OF_GRAPHX_FUNCTIONS 93
-#define AMOUNT_OF_FILEIOC_FUNCTIONS 21
+#define AMOUNT_OF_GRAPHX_FUNCTIONS 94
+#define AMOUNT_OF_FILEIOC_FUNCTIONS 26
 
 #define SQUARE_WIDTH 18
 #define SQUARE_HEIGHT 13
 #define SQUARES_START_POS 30
+
+#define AMOUNT_OF_TABS 8
 
 KeyHook_start:
 	.db	83h
@@ -67,7 +69,7 @@ KeyIsLeft:
 	jr	DisplayTabWithTokens
 KeyIsRight:
 	ld	a, d
-	cp	a, 8
+	cp	a, AMOUNT_OF_TABS
 	jr	z, KeyLoop
 	inc	d
 	jr	DisplayTabWithTokens
@@ -137,13 +139,13 @@ KeyNotUp:
 	cp	a, skDown
 	jr	nz, KeyNotDown
 	ld	a, d
-	cp	a, 7
+	cp	a, AMOUNT_OF_TABS
 	ld	a, e
 	jr	nz, +_
-	cp	a, (AMOUNT_OF_CUSTOM_TOKENS + AMOUNT_OF_GRAPHX_FUNCTIONS + AMOUNT_OF_FILEIOC_FUNCTIONS)%16 - 1
+	cp	a, (AMOUNT_OF_CUSTOM_TOKENS + AMOUNT_OF_GRAPHX_FUNCTIONS + AMOUNT_OF_FILEIOC_FUNCTIONS) % 16 - 1
 	jr	z, KeyLoop
 _:	ld	a, e
-	cp	a, 16-1
+	cp	a, 16 - 1
 	jr	z, KeyLoop
 	inc	e
 	jr	EraseCursor
@@ -162,14 +164,17 @@ KeyNotDown:
 	cp	a, AMOUNT_OF_FILEIOC_FUNCTIONS
 	jr	nc, +_
 	ld	(hl), tSum
+	cp	a, 21
+	jr	c, $+4
+	add	a, 5				; Skip 5 FILEIOC functions
 	jr	++_
 _:	ld	(hl), tDet
 	sub	a, AMOUNT_OF_FILEIOC_FUNCTIONS
 _:	inc	hl
-	cp	a, 10
+	ld	e, 10
+	cp	a, e
 	jr	c, +_
 	ld	d, a
-	ld	e, 10
 	xor	a, a
 	ld	b, 8
 _loop:
@@ -407,7 +412,7 @@ CursorHook_start:
 	cp	a, 24h
 	jr	nz, +_
 	inc	a
-	ld	a, (curUnder)
+	ld	a, b
 	ret
 _:	cp	a, 22h
 	ret	nz
@@ -469,13 +474,17 @@ GetDetValueStop:
 	ld	a, iyl
 	ld	iy, flags
 	cp	a, tDet
+	ld	a, l
 	jr	z, +_
 	ld	de, AMOUNT_OF_FILEIOC_FUNCTIONS
 	ld	bc, FileiocFunctionsPointers
+	cp	a, 26
+	jr	c, ++_
+	sub	a, 5
+	ld	l, a
 	jr	++_
 _:	ld	de, AMOUNT_OF_GRAPHX_FUNCTIONS
 	ld	bc, GraphxFunctionsPointers
-	ld	a, l
 	cp	a, 55
 	jr	z, WrongDetValue
 	cp	a, 56
@@ -545,8 +554,13 @@ F18:	.db "GetTokenString(", 014h, "PTR,", 014h, "L_TOK,", 014h, "L_STRING)", 0
 F19:	.db "GetDataPtr(SLOT)", 0
 F20:	.db "Detect(", 014h, "PTR,DATA)", 0
 F21:	.db "DetectVar(", 014h, "PTR,DATA,TYPE)", 0
-G01:	.db "Begin()", 0
+F22:	.db "DetectAny(", 014h, "PTR,DATA,", 014h, "TYPE)", 0
 Tab3:
+F23:	.db "GetVATPtr(SLOT)", 0
+F24:	.db "GetName(PTR,SLOT)", 0
+F25:	.db "Rename(PTR_OLD,PTR_NEW)", 0
+F26:	.db "RenameVar(PTR_OLD,PTR_NEW,TYPE)", 0
+G01:	.db "Begin()", 0
 G02:	.db "End()", 0
 G03:	.db "SetColor(COLOR)", 0
 G04:	.db "SetDefaultPalette()", 0
@@ -558,12 +572,12 @@ G09:	.db "GetDraw()", 0
 G10:	.db "SetDraw(LOC)", 0
 G11:	.db "SwapDraw()", 0
 G12:	.db "Blit(LOC)", 0
+Tab4:
 G13:	.db "BlitLines(LOC,Y,NUM)", 0
 G14:	.db "BlitArea(LOC,X,Y,W,H)", 0
 G15:	.db "PrintChar(CHAR)", 0
 G16:	.db "PrintInt(N,CHARS)", 0
 G17:	.db "PrintUInt(N,CHARS)", 0
-Tab4:
 G18:	.db "PrintString(STRING)", 0
 G19:	.db "PrintStringXY(STRING,X,Y)", 0
 G20:	.db "SetTextXY(X,Y)", 0
@@ -575,12 +589,12 @@ G25:	.db "SetCustomFontSpacing(DATA)", 0
 G26:	.db "SetMonospaceFont(SPACE)", 0
 G27:	.db "GetStringWidth(STRING)", 0
 G28:	.db "GetCharWidth(CHAR)", 0
+Tab5:
 G29:	.db "GetTextX()", 0
 G30:	.db "GetTextY()", 0
 G31:	.db "Line(X1,Y1,X2,Y2)", 0
 G32:	.db "HorizLine(X,Y,LENGTH)", 0
 G33:	.db "VertLine(X,Y,LENGTH)", 0
-Tab5:
 G34:	.db "Circle(X,Y,R)", 0
 G35:	.db "FillCircle(X,Y,R)", 0
 G36:	.db "Rectangle(X,Y,W,H)", 0
@@ -592,12 +606,12 @@ G41:	.db "FillCircle_NoClip(X,Y,R)", 0
 G42:	.db "Rectangle_NoClip(X,Y,W,H)", 0
 G43:	.db "FillRectangle_NoClip(X,Y,W,H)", 0
 G44:	.db "SetClipRegion(XMIN,YMIN,XMAX,YMAX)", 0
+Tab6:
 G45:	.db "GetClipRegion(PTR)", 0
 G46:	.db "ShiftDown(PIXELS)", 0
 G47:	.db "ShiftUp(PIXELS)", 0
 G48:	.db "ShiftLeft(PIXELS)", 0
 G49:	.db "ShiftRight(PIXELS)", 0
-Tab6:
 G50:	.db "Tilemap(PTR,X,Y)", 0
 G51:	.db "Tilemap_NoClip(PTR,X,Y)", 0
 G52:	.db "TransparentTilemap(PTR,X,Y)", 0
@@ -609,12 +623,12 @@ G57:	.db "NOT USED", 0
 G58:	.db "Sprite(PTR,X,Y)", 0
 G59:	.db "TransparentSprite(PTR,X,Y)", 0
 G60:	.db "Sprite_NoClip(PTR,X,Y)", 0
+Tab7:
 G61:	.db "TransparentSprite_NoClip(PTR,X,Y)", 0
 G62:	.db "GetSprite_NoClip(PTR,X,Y)", 0
 G63:	.db "ScaledSprite_NoClip(PTR,X,Y)", 0
 G64:	.db "ScaledTransparentSprite_NoClip(PTR,X,Y)", 0
 G65:	.db "FlipSpriteY(PTR_IN,PTR_OUT)", 0
-Tab7:
 G66:	.db "FlipSpriteX(PTR_IN,PTR_OUT)", 0
 G67:	.db "RotateSpriteC(PTR_IN,PTR_OUT)", 0
 G68:	.db "RotateSpriteCC(PTR_IN,PTR_OUT)", 0
@@ -626,12 +640,12 @@ G73:	.db "FillTriangle_NoClip(X1,Y1,X2,Y2,X3,Y3)", 0
 G74:	.db "NOT USED", 0
 G75:	.db "SetTextScale(W_SCALE,H_SCALE)", 0
 G76:	.db "SetTransparentColor(COLOR)", 0
+Tab8:
 G77:	.db "ZeroScreen()", 0
 G78:	.db "SetTextConfig(CONFIG)", 0
 G79:	.db "GetSpriteChar(CHAR)", 0
 G80:	.db "Lighten(COLOR,AMOUNT)", 0
 G81:	.db "Darken(COLOR,AMOUNT)", 0
-Tab8:
 G82:	.db "SetFontHeight(HEIGHT)", 0
 G83:	.db "ScaledSprite(PTR_IN,PTR_OUT)", 0
 G84:	.db "FloodFill(X,Y,COLOR)", 0
@@ -643,7 +657,9 @@ G89:	.db "ConvertToNewRLETSprite()", 0
 G90:	.db "Rot.Sc.Spr.(PTR_IN,PTR_OUT,ANGLE,SCALE)", 0
 G91:	.db "Rot.Sc.Tr.Spr._NC(PTR,X,Y,ANGLE,SCALE)", 0
 G92:	.db "Rot.Sc.Spr._NC(PTR,X,Y,ANGLE,SCALE)", 0
+Tab9:
 G93:	.db "SetCharData(INDEX,DATA)", 0
+G94:	.db "Wait()", 0
 	.db 0
       
 ; These magic bytes can be found with _GetKeyPress (D is 2-byte token, E is token, A is output)
@@ -660,11 +676,13 @@ Tok10:  .db 0C1h, 8,  "Compare("        ; 62 13
 
 TabPointers:
 	.dl Tab1, Tab2, Tab3, Tab4, Tab5, Tab6, Tab7, Tab8
+	.dl Tab9
     
 FileiocFunctionsPointers:
 	.dl F01, F02, F03, F04, F05, F06, F07, F08
 	.dl F09, F10, F11, F12, F13, F14, F15, F16
-	.dl F17, F18, F19, F20, F21
+	.dl F17, F18, F19, F20, F21, F22, F23, F24
+	.dl F25, F26
     
 GraphxFunctionsPointers:
 	.dl G01, G02, G03, G04, G05, G06, G07, G08
@@ -678,7 +696,7 @@ GraphxFunctionsPointers:
 	.dl G65, G66, G67, G68, G69, G70, G71, G72
 	.dl G73, G74, G75, G76, G77, G78, G79, G80
 	.dl G81, G82, G83, G84, G85, G86, G87, G88
-	.dl G89, G90, G91, G92, G93
+	.dl G89, G90, G91, G92, G93, G94
     
 CustomTokensPointers:
 	.dl Tok1, Tok2, Tok3, Tok4, Tok5, Tok6, Tok7, Tok8

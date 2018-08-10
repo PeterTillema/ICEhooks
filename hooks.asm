@@ -19,6 +19,10 @@ KeyHook_start:
 	cp	a, cxPrgmEdit
 	ld	a, b
 	ret	nz
+	ld	a, (menuCurrent)
+	or	a, a
+	ld	a, b
+	ret	nz
 	push	af
 	call	_os_ClearStatusBarLow
 	res	0, (iy-41h)

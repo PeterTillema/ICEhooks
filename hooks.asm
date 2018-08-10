@@ -23,11 +23,11 @@ KeyHook_start:
 	call	_os_ClearStatusBarLow
 	res	0, (iy-41h)
 ; Stupid OS, we need to copy it to safe RAM, because the OS clears progToEdit when opening another OS context
-	ld	a, (progToEdit)
-	or	a, a
+	ld	hl, progToEdit
+	xor	a, a
+	cp	a, (hl)
 	jr	z, +_
 	ld	de, saveSScreen
-	ld	hl, progToEdit
 	call	_Mov9b
 _:	pop	af
 	cp	a, kTrace

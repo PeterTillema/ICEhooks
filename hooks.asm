@@ -525,7 +525,7 @@ _:	or	a, a
 	ret
 
 Tab1:
-C1:	.db "DefineSprite(W,H[,PTR])", 0
+C1:	.db "DefineSprite(W,H", 0C1h, ",PTR])", 0
 C2:	.db "Call LABEL", 0
 C3:	.db "Data(SIZE,CONST...)", 0
 C4:	.db "Copy(PTR_OUT,PTR_IN,SIZE)", 0

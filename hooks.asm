@@ -428,7 +428,16 @@ _:	cp	a, 22h
 	cp	a, tSum
 	jr	z, DrawDetText
 	cp	a, tDet
+	jr	z, DrawDetText
+	cp	a, tEnd
+	jr	z, +_
+	cp	a, tElse
 	ret	nz
+_:	push	hl
+	ld	hl, DrawEndTextBegin
+	ld	de, (rawKeyHookPtr)
+	add	hl, de
+	jp	(hl)
 DrawDetText:
 	bit	0, (iy-41h)
 	ret	nz
@@ -521,7 +530,102 @@ _:	or	a, a
 	ld	de, 0FFFFh
 	ld.sis	(drawBGColor & 0FFFFh), de
 	set	0, (iy-41h)
-	inc	a
+_:	inc	a
+	ret
+;b: control/end counter
+DrawEndTextBegin:
+	pop hl
+	ld	b, 1
+DrawEndTextLoop:
+	ld	de, (editTop)
+	scf
+	sbc	hl, de
+	jr	c, -_
+	add hl, de
+	ld	a, (hl)
+	cp	a, tIf
+	jr	nz, +_
+	push	hl
+	ld	hl, (editTop)
+	ld	a, (hl)
+	pop	hl
+	cp	a, tii
+	ld	a, (hl)
+	jr	z, ++_
+_:	cp	a, tThen
+	jr	z, +_
+	cp	a, tWhile
+	jr	z, +_
+	cp	a, tRepeat
+	jr	z, +_
+	cp	a, tFor
+	jr	z, +_
+	cp	a, tEnd
+	jr	nz, DrawEndTextLoop
+	inc	b
+	jr	DrawEndTextLoop
+_:	scf
+	sbc	hl, de
+	jr	c, +_
+	add hl, de
+	ld	a, (hl)
+	inc	hl
+	cp	a, tEnter
+	jr	z, ++_
+	cp	a, tColon
+	jr	z, ++_
+	jr	DrawEndTextLoop
+_:	add hl, de
+	inc	hl
+_:	dec	b
+	jr	nz, DrawEndTextLoop
+	jr	DrawEndTextEnd
+DrawEndTextEnd:
+	ld	a, (hl)
+	cp	a, tThen
+	jr	nz, ++_
+_:	ld	de, (editTop)
+	scf
+	sbc	hl, de
+	jr	c, DrawEndTextExit
+	add hl, de
+	ld	a, (hl)
+	cp	a, tIf
+	jr	nz, -_
+_:	
+	ld	de, 000E71Ch
+	ld.sis	(drawFGColor & 0FFFFh), de
+	ld.sis	de, (statusBarBGColor & 0FFFFh)
+	ld.sis	(drawBGColor & 0FFFFh), de
+	ld	a, 14
+	ld	(penRow),a
+	ld	de, 2
+	ld.sis	(penCol & 0FFFFh), de
+	ld	b, 0
+DrawEndTextPrint:
+	inc e
+	push	de
+	call	_Get_Tok_Strng
+	pop de
+	add	a, e
+	cp	a, 25h
+	jr	nc, DrawEndTextExit
+	push	hl
+	ld	hl, OP3
+	call	_VPutS
+	pop	hl
+	ld	a, (hl)
+	call	_Isa2ByteTok
+	jr	nz, +_
+	inc	hl
+_:	inc	hl
+	ld	a, (hl)
+	cp	a, tEnter
+	jr	nz, DrawEndTextPrint
+	ld	de, 0FFFFh
+	ld.sis	(drawBGColor & 0FFFFh), de
+DrawEndTextExit:
+	or	a, a
 	ret
 
 Tab1:

@@ -544,55 +544,60 @@ DrawEndTextLoop:
 	add hl, de
 	ld	a, (hl)
 	cp	a, tIf
-	jr	nz, +_
+	jr	nz, TokenIsNotIf
 	push	hl
 	ld	hl, (editTop)
 	ld	a, (hl)
 	pop	hl
 	cp	a, tii
 	ld	a, (hl)
-	jr	z, ++_
-_:	cp	a, tThen
-	jr	z, +_
+	jr	z, CheckInComment
+TokenIsNotIf:
+	cp	a, tThen
+	jr	z, CheckInComment
 	cp	a, tWhile
-	jr	z, +_
+	jr	z, CheckInComment
 	cp	a, tRepeat
-	jr	z, +_
+	jr	z, CheckInComment
 	cp	a, tFor
-	jr	z, +_
+	jr	z, CheckInComment
 	cp	a, tEnd
 	jr	nz, DrawEndTextLoop
 	inc	b
 	jr	DrawEndTextLoop
-_:	scf
+CheckInComment:
+	scf
 	sbc	hl, de
-	jr	c, +_
+	jr	c, TokenIsFirst
 	add hl, de
 	ld	a, (hl)
 	inc	hl
 	cp	a, tEnter
-	jr	z, ++_
+	jr	z, NotInComment
 	cp	a, tColon
-	jr	z, ++_
+	jr	z, NotInComment
 	jr	DrawEndTextLoop
-_:	add hl, de
+TokenIsFirst:
+	add hl, de
 	inc	hl
-_:	dec	b
+NotInComment:
+	dec	b
 	jr	nz, DrawEndTextLoop
 	jr	DrawEndTextEnd
 DrawEndTextEnd:
 	ld	a, (hl)
 	cp	a, tThen
-	jr	nz, ++_
-_:	ld	de, (editTop)
+	jr	nz, EndTextPrepareDraw
+FindIfTokenLoop:
+	ld	de, (editTop)
 	scf
 	sbc	hl, de
 	jr	c, DrawEndTextExit
 	add hl, de
 	ld	a, (hl)
 	cp	a, tIf
-	jr	nz, -_
-_:	
+	jr	nz, FindIfTokenLoop
+EndTextPrepareDraw:	
 	ld	de, 000E71Ch
 	ld.sis	(drawFGColor & 0FFFFh), de
 	ld.sis	de, (statusBarBGColor & 0FFFFh)

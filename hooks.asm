@@ -434,8 +434,8 @@ _:	cp	a, 22h
 	cp	a, tElse
 	ret	nz
 _:	push	hl
-	ld	hl, DrawEndTextBegin
-	ld	de, (rawKeyHookPtr)
+	ld	de, DrawEndTextBegin
+	ld	hl, (rawKeyHookPtr)
 	add	hl, de
 	jp	(hl)
 DrawDetText:
@@ -532,9 +532,10 @@ _:	or	a, a
 	set	0, (iy-41h)
 _:	inc	a
 	ret
+	
 ;b: control/end counter
 DrawEndTextBegin:
-	pop hl
+	pop	hl
 	bit	0, (iy-41h)
 	ret	nz
 	ld	b, 1
@@ -543,7 +544,7 @@ DrawEndTextLoop:
 	scf
 	sbc	hl, de
 	jr	c, -_
-	add hl, de
+	add	hl, de
 	ld	a, (hl)
 	cp	a, tIf
 	jr	nz, TokenIsNotIf
@@ -571,7 +572,7 @@ CheckInComment:
 	scf
 	sbc	hl, de
 	jr	c, TokenIsFirst
-	add hl, de
+	add	hl, de
 	ld	a, (hl)
 	inc	hl
 	cp	a, tEnter
@@ -580,7 +581,7 @@ CheckInComment:
 	jr	z, NotInComment
 	jr	DrawEndTextLoop
 TokenIsFirst:
-	add hl, de
+	add	hl, de
 	inc	hl
 NotInComment:
 	dec	b
@@ -595,7 +596,7 @@ FindIfTokenLoop:
 	scf
 	sbc	hl, de
 	jr	c, -_
-	add hl, de
+	add	hl, de
 	ld	a, (hl)
 	cp	a, tIf
 	jr	nz, FindIfTokenLoop
@@ -613,10 +614,11 @@ EndTextPrepareDraw:
 DrawEndTextPrint:
 	push	de
 	call	_Get_Tok_Strng
-	pop		de
+	pop	de
 	push	hl
 	ld	hl, OP3
-	;copy paste of __VPutS start
+	
+;copy paste of __VPutS start
 	push	ix
 PutStringLoop:
 	ld 	a, (hl)
@@ -631,26 +633,25 @@ PutStringLoop:
 	call	_SFont_Len
 	pop	de
 	ld	hl, 00h
-	ld	l,	b
+	ld	l, b
 	add	hl, de
 	ex	de, hl
 	scf
-	ld	hl,	120h
+	ld	hl, 120h
 	sbc	hl, de
 	jr	c, StringCutoff
 	pop	hl
 	push	de
 	call	_VPutMap
 	pop	de
-	res	0, (iy+$08)
+	res	0, (iy + 008h)
 	jr	nc, PutStringLoop
 _:	pop	ix
-	;copy paste of __VPutS end
+	
+;copy paste of __VPutS end
 	pop	hl
 	ld	a, (hl)
-	push	de
 	call	_Isa2ByteTok
-	pop	de
 	jr	nz, +_
 	inc	hl
 _:	inc	hl
@@ -662,15 +663,15 @@ StringCutoff:
 	pop	hl
 	pop	ix
 	pop	hl
-	ld	de, (rawKeyHookPtr)
-	ld	hl, EllipsisText
+	ld	hl, (rawKeyHookPtr)
+	ld	de, EllipsisText
 	add	hl, de
 	call	_VPutS
 Success:
 	ld	de, 0FFFFh
 	ld.sis	(drawBGColor & 0FFFFh), de
 DrawEndTextExit:
-	set	0, (iy-41h)
+	set	0, (iy - 41h)
 	or	a, a
 	ret
 

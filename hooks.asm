@@ -428,7 +428,16 @@ _:	cp	a, 22h
 	cp	a, tSum
 	jr	z, DrawDetText
 	cp	a, tDet
+	jr	z, DrawDetText
+	cp	a, tEnd
+	jr	z, +_
+	cp	a, tElse
 	ret	nz
+_:	push	hl
+	ld	hl, DrawEndTextBegin
+	ld	de, (rawKeyHookPtr)
+	add	hl, de
+	jp	(hl)
 DrawDetText:
 	bit	0, (iy-41h)
 	ret	nz
@@ -521,7 +530,148 @@ _:	or	a, a
 	ld	de, 0FFFFh
 	ld.sis	(drawBGColor & 0FFFFh), de
 	set	0, (iy-41h)
-	inc	a
+_:	inc	a
+	ret
+;b: control/end counter
+DrawEndTextBegin:
+	pop hl
+	bit	0, (iy-41h)
+	ret	nz
+	ld	b, 1
+DrawEndTextLoop:
+	ld	de, (editTop)
+	scf
+	sbc	hl, de
+	jr	c, -_
+	add hl, de
+	ld	a, (hl)
+	cp	a, tIf
+	jr	nz, TokenIsNotIf
+	push	hl
+	ld	hl, (editTop)
+	ld	a, (hl)
+	pop	hl
+	cp	a, tii
+	ld	a, (hl)
+	jr	z, CheckInComment
+TokenIsNotIf:
+	cp	a, tThen
+	jr	z, CheckInComment
+	cp	a, tWhile
+	jr	z, CheckInComment
+	cp	a, tRepeat
+	jr	z, CheckInComment
+	cp	a, tFor
+	jr	z, CheckInComment
+	cp	a, tEnd
+	jr	nz, DrawEndTextLoop
+	inc	b
+	jr	DrawEndTextLoop
+CheckInComment:
+	scf
+	sbc	hl, de
+	jr	c, TokenIsFirst
+	add hl, de
+	ld	a, (hl)
+	inc	hl
+	cp	a, tEnter
+	jr	z, NotInComment
+	cp	a, tColon
+	jr	z, NotInComment
+	jr	DrawEndTextLoop
+TokenIsFirst:
+	add hl, de
+	inc	hl
+NotInComment:
+	dec	b
+	jr	nz, DrawEndTextLoop
+	jr	DrawEndTextEnd
+DrawEndTextEnd:
+	ld	a, (hl)
+	cp	a, tThen
+	jr	nz, EndTextPrepareDraw
+FindIfTokenLoop:
+	ld	de, (editTop)
+	scf
+	sbc	hl, de
+	jr	c, -_
+	add hl, de
+	ld	a, (hl)
+	cp	a, tIf
+	jr	nz, FindIfTokenLoop
+EndTextPrepareDraw:	
+	ld	de, 000E71Ch
+	ld.sis	(drawFGColor & 0FFFFh), de
+	ld.sis	de, (statusBarBGColor & 0FFFFh)
+	ld.sis	(drawBGColor & 0FFFFh), de
+	ld	a, 14
+	ld	(penRow),a
+	ld	de, 2
+	ld.sis	(penCol & 0FFFFh), de
+	ld	b, 0
+	ld	de, (penCol)
+DrawEndTextPrint:
+	push	de
+	call	_Get_Tok_Strng
+	pop		de
+	push	hl
+	ld	hl, OP3
+	;copy paste of __VPutS start
+	push	ix
+PutStringLoop:
+	ld 	a, (hl)
+	inc	hl
+	or	a, a
+	jr	z, +_
+	push	hl
+	push	de
+	ld	l, a
+	ld	h, 25
+	mlt	hl
+	call	_SFont_Len
+	pop	de
+	ld	hl, 00h
+	ld	l,	b
+	add	hl, de
+	ex	de, hl
+	scf
+	ld	hl,	120h
+	sbc	hl, de
+	jr	c, StringCutoff
+	pop	hl
+	push	de
+	call	_VPutMap
+	pop	de
+	res	0, (iy+$08)
+	jr	nc, PutStringLoop
+_:	pop	ix
+	;copy paste of __VPutS end
+	pop	hl
+	ld	a, (hl)
+	push	de
+	call	_Isa2ByteTok
+	pop	de
+	jr	nz, +_
+	inc	hl
+_:	inc	hl
+	ld	a, (hl)
+	cp	a, tEnter
+	jr	nz, DrawEndTextPrint
+	jr	Success
+StringCutoff:
+	pop	hl
+	pop	ix
+	pop	hl
+	ld	de, (rawKeyHookPtr)
+	ld	hl, EllipsisText
+	add	hl, de
+	call	_VPutS
+Success:
+	ld	de, 0FFFFh
+	ld.sis	(drawBGColor & 0FFFFh), de
+DrawEndTextExit:
+	set	0, (iy-41h)
+	or	a, a
 	ret
 
 Tab1:
@@ -706,6 +856,8 @@ CustomTokensPointers:
 	.dl Tok1, Tok2, Tok3, Tok4, Tok5, Tok6, Tok7, Tok8
 	.dl Tok9, Tok10
 
+EllipsisText:
+	.db	"...", 0
 ProgramText:
 	.db "PROGRAM:", 0
 ColorText:

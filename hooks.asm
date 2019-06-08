@@ -237,8 +237,8 @@ BufferSearch:
 _:	call	_BufLeft
 	jr	z, BufferFound
 	ld	a, d
-	or	a,a
-	jr	nz,-_
+	or	a, a
+	jr	nz, -_
 	ld	a, e
 	cp	a, tEnter
 	jr	z, +_
